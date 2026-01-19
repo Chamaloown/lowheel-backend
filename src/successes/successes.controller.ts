@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Patch } from '@nestjs/common';
 import { SuccessesService } from './successes.service';
 import { verifyDto } from './dto/verify.dto';
 
@@ -6,19 +6,17 @@ import { verifyDto } from './dto/verify.dto';
 export class SuccessesController {
   constructor(private readonly successesService: SuccessesService) { }
 
-  @Get()
-  findAll(@Query("userId") userId: number) {
-    return this.successesService.findAll({ userId });
+  @Get('/:userId')
+  findAll(@Param('userId') userId: number) {
+    return this.successesService.findAll(+userId);
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.successesService.findOne(+id);
-  }
-
 
   @Patch('/verify')
-  verify(@Body() verifyDto: verifyDto) {
-    return this.successesService.verify({ ...verifyDto })
+  async verify(@Body() verifyDto: verifyDto) {
+    const isVerified = await this.successesService.verify({ ...verifyDto })
+    if (isVerified) {
+      return { message: 'Success Unlocked. GG!', timestamp: new Date().toISOString(), statusCode: HttpStatus.OK };
+    }
+    return { message: 'Success Locked. Good luck next time', timestamp: new Date().toISOString(), statusCode: HttpStatus.NO_CONTENT };
   }
 }

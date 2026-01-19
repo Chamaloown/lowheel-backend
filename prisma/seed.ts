@@ -1,31 +1,39 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "src/generated/prisma/client";
 import { championsByRoles } from "src/data/champions";
+import { Pool } from 'pg';
 
 const connectionString = process.env.DATABASE_URL;
-
-const adapter = new PrismaPg({ connectionString });
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
     const roles = ['top', 'jungle', 'mid', 'adc', 'support'];
 
     console.log("Creating roles...");
-    await Promise.all(
-        roles.map((roleName) =>
-            prisma.role.upsert({
-                where: { name: roleName },
-                update: {},
-                create: { name: roleName },
-            })
-        )
-    );
+    const roleMap: Record<string, number> = {};
 
-    console.log("Creating champions and linking roles...");
-    const championPromises = Object.entries(championsByRoles).map(async ([championName, details]) => {
-        const champion = await prisma.champion.create({
-            data: {
+    for (const roleName of roles) {
+        const role = await prisma.role.upsert({
+            where: { name: roleName },
+            update: {},
+            create: { name: roleName },
+        });
+        roleMap[roleName] = role.id;
+    }
+
+    console.log("Creating champions, links, and successes...");
+
+    const championEntries = Object.entries(championsByRoles);
+
+    await Promise.all(championEntries.map(async ([championName, details]) => {
+        const champion = await prisma.champion.upsert({
+            where: { name: championName },
+            update: {},
+            create: {
                 name: championName,
+                imgUrl: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championName}_0.jpg`,
                 roles: {
                     create: details.roles.map((roleName) => ({
                         role: {
@@ -36,17 +44,26 @@ async function main() {
             }
         });
 
-        await prisma.success.create({
-            data: {
-                championId: champion.id,
-            }
-        });
+        await Promise.all(details.roles.map((roleName) => {
+            const roleId = roleMap[roleName];
 
-        return champion;
-    });
+            return prisma.success.upsert({
+                where: {
+                    championId_roleId: {
+                        championId: champion.id,
+                        roleId: roleId
+                    }
+                },
+                update: {},
+                create: {
+                    championId: champion.id,
+                    roleId: roleId
+                }
+            });
+        }));
+    }));
 
-    const results = await Promise.all(championPromises);
-    console.log(`Successfully seeded ${results.length} champions.`);
+    console.log(`Successfully seeded ${championEntries.length} champions and their successes.`);
 }
 
 main()

@@ -18,15 +18,19 @@ model User {
 model Success {
   id         Int                @id @default(autoincrement())
   champion   Champion           @relation(fields: [championId], references: [id])
-  championId Int                @unique
+  championId Int
+  role       Role               @relation(fields: [roleId], references: [id])
+  roleId     Int
   users      UsersOnSuccesses[]
+
+  @@unique([championId, roleId])
 }
 
 model Champion {
   id        Int                @id @default(autoincrement())
   name      String             @unique
-  success   Success?
-  successId Int?
+  imgUrl    String?
+  successes Success[]
   roles     RolesOnChampions[]
 }
 
@@ -34,6 +38,7 @@ model Role {
   id        Int                @id @default(autoincrement())
   name      String             @unique
   champions RolesOnChampions[]
+  successes Success[]
 }
 
 model UsersOnSuccesses {
@@ -49,7 +54,7 @@ model UsersOnSuccesses {
 model RolesOnChampions {
   role       Role     @relation(fields: [roleId], references: [id])
   roleId     Int
-  Champion   Champion @relation(fields: [championId], references: [id])
+  champion   Champion @relation(fields: [championId], references: [id])
   championId Int
 
   @@id([roleId, championId])

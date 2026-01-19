@@ -21,7 +21,7 @@ export class RiotService {
             }
             ).pipe(
                 catchError((error: AxiosError) => {
-                    console.log(error)
+                    console.error(error)
                     throw 'An error happened!';
                 }),
             ),
@@ -38,7 +38,7 @@ export class RiotService {
             }
             ).pipe(
                 catchError((error: AxiosError) => {
-                    console.log(error)
+                    console.error(error)
                     throw Error(`message: ${error}`)
                 }),
             ),
@@ -55,7 +55,7 @@ export class RiotService {
             }
             ).pipe(
                 catchError((error: AxiosError) => {
-                    console.log(error)
+                    console.error(error)
                     throw Error(`message: ${error}`)
                 }),
             ),

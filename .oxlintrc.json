@@ -1,12 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "unicorn",
-    "typescript",
-    "oxc"
-  ],
+  "plugins": ["unicorn", "typescript", "oxc"],
   "categories": {},
   "rules": {
+    "semi": "off",
+
+    // Default rules from oxlint
     "constructor-super": "warn",
     "for-direction": "warn",
     "no-async-promise-executor": "warn",

@@ -8,7 +8,11 @@ async function bootstrap() {
     new FastifyAdapter()
   );
   app.setGlobalPrefix('api')
-  app.enableCors();
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
   console.log("Version 1.0.0")
   await app.listen(process.env.PORT ?? 3000, "0.0.0.0");
 }

@@ -1,5 +1,5 @@
 export class verifyDto {
-    name: string
-    tagLine: string
-    champion: string
+    userId: number
+    roleId: number
+    championId: number
 }

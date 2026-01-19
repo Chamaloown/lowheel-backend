@@ -6,7 +6,7 @@ export class RolesService {
   constructor(private prismaService: PrismaService) { }
 
   findAll() {
-    return `This action returns all roles`;
+    return this.prismaService.role.findMany()
   }
 
 

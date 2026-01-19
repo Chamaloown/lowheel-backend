@@ -9,19 +9,11 @@ export class SuccessesService {
     private readonly riotService: RiotService,
   ) { }
 
-  private async validate(name: string, tagLine: string, champion: string) {
-    const user = await this.prismaService.user.findFirst({
-      where: {
-        name: name
-      }
-    })
-    if (!user) {
-      throw "Unable to find User"
-    }
+  private async validate(userId: number, championId: number) {
     const success = await this.prismaService.success.findFirst({
       where: {
         champion: {
-          name: champion
+          id: championId
         }
       }
     })
@@ -31,27 +23,40 @@ export class SuccessesService {
     await this.prismaService.usersOnSuccesses.create({
       data: {
         successId: success?.id,
-        userId: user?.id
+        userId
       }
     })
   }
 
 
-  findAll({ userId }: { userId?: number }) {
-    if (!userId) {
-      return this.prismaService.success.findMany()
-    }
-
-    return this.prismaService.success.findMany({
-      where: {
+  async findAll(userId: number) {
+    const allSuccesses = await this.prismaService.success.findMany({
+      include: {
+        champion: true,
+        role: true,
         users: {
-          some: {
-            userId: +userId
-          }
-        }
+          where: {
+            userId: userId,
+          },
+        },
+      },
+    });
+
+    return allSuccesses.reduce((acc, curr) => {
+      const roleName = curr.role.name.toLowerCase();
+
+      if (!acc[roleName]) {
+        acc[roleName] = [];
       }
-    }
-    )
+
+      acc[roleName].push({
+        id: curr.id,
+        champion: curr.champion,
+        isCompleted: curr.users.length > 0,
+      });
+
+      return acc;
+    }, {} as Record<string, any[]>);
   }
 
 
@@ -63,20 +68,31 @@ export class SuccessesService {
     })
   }
 
-  async verify({ name, tagLine, champion }: { name: string, tagLine: string, champion: string }) {
-    const info = await this.riotService.getPlayerInfo(name, tagLine)
+  async verify({ userId, roleId, championId }: { userId: number, roleId: number, championId: number }) {
+    // TODO CHECK ROLE
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        id: userId
+      }
+    })
+    if (!user) throw new Error("No User")
+
+    const info = await this.riotService.getPlayerInfo(user.name, user.tagLine)
 
     const latestMatchId = await this.riotService.getLatestMatchId(info.puuid)
-
     const fullMatchDetails = await this.riotService.getFullMatchDetails(latestMatchId)
-
     const player = fullMatchDetails.info.participants.find(p => p.puuid === info.puuid);
+    const champion = await this.prismaService.champion.findFirst({
+      where: {
+        id: championId
+      }
+    })
+    if (!champion) throw new Error("No Champion")
 
-    if (player?.championName === champion && player.win) {
-      this.validate(name, tagLine, champion)
+    if (player?.championName === champion.name && player.win) {
+      this.validate(userId, championId)
       return true
     }
-
     return false
   }
 }
