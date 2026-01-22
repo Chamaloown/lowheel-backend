@@ -13,7 +13,7 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
-  console.log("Version 1.0.0")
+  console.log("Version 1.0.1")
   await app.listen(process.env.PORT ?? 3000, "0.0.0.0");
 }
 bootstrap();
